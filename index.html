@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amir Khanalipour | System Architect</title>
+    <meta name="description" content="Portfolio of Amir Khanalipour - Backend Software Engineer.">
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&family=Rajdhani:wght@300;500;700&family=Space+Grotesk:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Space Grotesk"', 'sans-serif'],
+                        mono: ['"JetBrains Mono"', 'monospace'],
+                        hud: ['"Rajdhani"', 'sans-serif'],
+                    },
+                    colors: {
+                        bg: '#020617',
+                        card: '#0f172a',
+                        neonPurple: '#d946ef',
+                        neonBlue: '#06b6d4', 
+                        neonGreen: '#22c55e',
+                        hudBorder: 'rgba(6, 182, 212, 0.3)',
+                    },
+                    animation: {
+                        'pulse-fast': 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'glitch': 'glitch 1s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                    },
+                    keyframes: {
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-20px)' },
+                        },
+                        glitch: {
+                            '2%, 64%': { transform: 'translate(2px,0) skew(0deg)' },
+                            '4%, 60%': { transform: 'translate(-2px,0) skew(0deg)' },
+                            '62%': { transform: 'translate(0,0) skew(5deg)' },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { cursor: none; }
+        #cursor-dot, #cursor-outline {
+            position: fixed; top: 0; left: 0;
+            transform: translate(-50%, -50%);
+            border-radius: 50%; pointer-events: none; z-index: 9999;
+        }
+        #cursor-dot { width: 8px; height: 8px; background: #06b6d4; }
+        #cursor-outline {
+            width: 40px; height: 40px;
+            border: 2px solid rgba(217, 70, 239, 0.5);
+            transition: width 0.2s, height 0.2s, background-color 0.2s;
+        }
+
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #d946ef; border-radius: 0px; }
+
+        .glass-hud {
+            background: rgba(15, 23, 42, 0.65);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            box-shadow: 0 0 15px rgba(6, 182, 212, 0.1), inset 0 0 20px rgba(0,0,0,0.5);
+        }
+
+        .neon-text { text-shadow: 0 0 10px rgba(6, 182, 212, 0.7); }
+        .neon-purple-text { text-shadow: 0 0 10px rgba(217, 70, 239, 0.7); }
+
+        .glitch-hover:hover {
+            animation: glitch 0.3s cubic-bezier(.25, .46, .45, .94) both infinite;
+            color: #d946ef;
+        }
+
+        .scanlines {
+            background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0) 50%, rgba(0,0,0,0.2) 50%, rgba(0,0,0,0.2));
+            background-size: 100% 4px;
+            position: fixed; pointer-events: none; inset: 0; z-index: 5; opacity: 0.15;
+        }
+
+        .reveal { opacity: 0; transform: translateY(30px) scale(0.95); transition: all 0.8s ease-out; }
+        .reveal.active { opacity: 1; transform: translateY(0) scale(1); }
+
+        .skill-fill { width: 0%; transition: width 1.5s cubic-bezier(0.4, 0, 0.2, 1); }
+    </style>
+</head>
+<body class="bg-bg text-slate-300 overflow-x-hidden selection:bg-neonPurple selection:text-white">
+
+    <div id="cursor-dot"></div>
+    <div id="cursor-outline"></div>
+
+    <div class="scanlines"></div>
+    <canvas id="neural-canvas" class="fixed inset-0 w-full h-full pointer-events-none z-0 opacity-40"></canvas>
+    
+    <div class="fixed top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+        <div class="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-neonPurple/20 rounded-full blur-[120px]"></div>
+        <div class="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-neonBlue/20 rounded-full blur-[120px]"></div>
+    </div>
+
+    <nav class="fixed top-6 left-1/2 transform -translate-x-1/2 w-[90%] max-w-5xl z-50 glass-hud rounded-full px-6 py-3 transition-all duration-300 flex justify-between items-center" id="navbar">
+        <a href="#" class="font-hud font-bold text-2xl tracking-widest text-white hover:text-neonBlue transition-colors">
+            <span class="text-neonPurple">&lt;</span>AK_SYS<span class="text-neonPurple">/&gt;</span>
+        </a>
+        
+        <div class="hidden md:flex gap-8 font-mono text-xs uppercase tracking-widest text-slate-400">
+            <a href="#about" class="hover:text-neonBlue hover:shadow-[0_0_10px_cyan] transition-all">// Identity</a>
+            <a href="#stack" class="hover:text-neonBlue hover:shadow-[0_0_10px_cyan] transition-all">// Arsenal</a>
+            <a href="#projects" class="hover:text-neonBlue hover:shadow-[0_0_10px_cyan] transition-all">// Missions</a>
+            <a href="#experience" class="hover:text-neonBlue hover:shadow-[0_0_10px_cyan] transition-all">// Logs</a>
+        </div>
+
+        <button onclick="downloadResume()" class="hidden md:flex items-center gap-2 px-4 py-1.5 rounded-full border border-neonPurple/50 text-neonPurple font-mono text-xs hover:bg-neonPurple hover:text-white transition-all group relative overflow-hidden">
+            <span class="absolute inset-0 bg-white/20 translate-y-full group-hover:translate-y-0 transition-transform"></span>
+            <span class="relative z-10">DOWNLOAD_DATA</span>
+            <i class="fa-solid fa-download relative z-10"></i>
+        </button>
+
+        <button class="md:hidden text-neonBlue" id="mobile-menu-btn"><i class="fa-solid fa-bars-staggered"></i></button>
+    </nav>
+
+    <div id="mobile-menu" class="fixed inset-0 bg-bg/95 z-40 flex flex-col items-center justify-center gap-8 transform translate-y-[-100%] transition-transform duration-500 backdrop-blur-xl">
+        <a href="#about" class="text-2xl font-hud text-white hover:text-neonBlue">IDENTITY</a>
+        <a href="#stack" class="text-2xl font-hud text-white hover:text-neonBlue">ARSENAL</a>
+        <a href="#projects" class="text-2xl font-hud text-white hover:text-neonBlue">MISSIONS</a>
+        <button onclick="downloadResume()" class="px-8 py-3 border border-neonPurple text-neonPurple font-mono">INIT_DOWNLOAD</button>
+        <button id="close-menu" class="absolute top-8 right-8 text-white text-2xl"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <main class="relative z-10 max-w-7xl mx-auto px-6 pt-32 pb-20">
+
+        <section id="about" class="min-h-[85vh] flex flex-col lg:flex-row items-center justify-between gap-12">
+            
+            <div class="flex-1 space-y-8 reveal active">
+                <div class="inline-flex items-center gap-3 px-4 py-1 rounded-sm border-l-4 border-neonGreen bg-neonGreen/10 font-mono text-xs text-neonGreen">
+                    <span class="animate-pulse">●</span> SYSTEM ONLINE: AVAILABLE FOR HIRE
+                </div>
+                
+                <h1 class="text-6xl md:text-8xl font-bold text-white tracking-tighter leading-[0.9] font-hud">
+                    ARCHITECT <br> 
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-neonBlue to-purple-600 neon-text glitch-hover">BACKEND</span> <br>
+                    SYSTEMS.
+                </h1>
+                
+                <div class="h-24 font-mono text-slate-400 text-sm md:text-base leading-relaxed max-w-xl border-l-2 border-slate-700 pl-4">
+                    <span class="text-neonPurple">root@amir:~$</span> <span id="typewriter"></span><span class="animate-pulse">_</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 max-w-md pt-4">
+                    <div class="glass-hud p-3 rounded text-center">
+                        <div class="text-xs text-slate-500 font-mono mb-1">EXP. LEVEL</div>
+                        <div class="text-2xl font-bold text-white font-hud">04<span class="text-neonBlue text-sm">YRS</span></div>
+                    </div>
+                    <div class="glass-hud p-3 rounded text-center">
+                        <div class="text-xs text-slate-500 font-mono mb-1">COFFEE</div>
+                        <div class="text-2xl font-bold text-white font-hud">∞<span class="text-neonPurple text-sm">%</span></div>
+                    </div>
+                    <div class="glass-hud p-3 rounded text-center">
+                        <div class="text-xs text-slate-500 font-mono mb-1">STATUS</div>
+                        <div class="text-xl font-bold text-neonGreen font-hud">ONLINE</div>
+                    </div>
+                </div>
+
+                <div class="flex gap-4 pt-4">
+                    <a href="#projects" class="px-8 py-4 bg-neonBlue/10 border border-neonBlue text-neonBlue font-bold font-mono hover:bg-neonBlue hover:text-black transition-all hover:shadow-[0_0_20px_rgba(6,182,212,0.4)] clip-path-slant">
+                        VIEW_MODULES
+                    </a>
+                    <div class="flex items-center gap-6 px-6">
+                        <a href="https://github.com/amirm-khanalipour" target="_blank" class="text-2xl text-slate-500 hover:text-white hover:scale-125 transition-all"><i class="fa-brands fa-github"></i></a>
+                        <a href="https://www.linkedin.com/in/amir-khanalipour-85b207228" target="_blank" class="text-2xl text-slate-500 hover:text-neonBlue hover:scale-125 transition-all"><i class="fa-brands fa-linkedin"></i></a>
+                        <a href="mailto:amirm.khanalipour@gmail.com" class="text-2xl text-slate-500 hover:text-neonPurple hover:scale-125 transition-all"><i class="fa-solid fa-envelope"></i></a>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 w-full lg:max-w-xl reveal delay-200 relative">
+                <div class="absolute -top-10 -right-10 w-32 h-32 border-t-2 border-r-2 border-neonPurple/30 rounded-tr-3xl"></div>
+                <div class="absolute -bottom-10 -left-10 w-32 h-32 border-b-2 border-l-2 border-neonBlue/30 rounded-bl-3xl"></div>
+                
+                <div class="glass-hud rounded-lg overflow-hidden animate-float">
+                    <div class="bg-slate-900/80 px-4 py-2 flex justify-between items-center border-b border-white/5">
+                        <div class="flex gap-2">
+                            <div class="w-3 h-3 rounded-full bg-red-500/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500/50"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500/50"></div>
+                        </div>
+                        <div class="font-mono text-xs text-slate-500">architecture.go</div>
+                    </div>
+                    <div class="p-6 font-mono text-xs md:text-sm overflow-x-auto">
+                        <div class="text-slate-400">
+                            <span class="text-neonPurple">package</span> main<br><br>
+                            <span class="text-neonPurple">type</span> Engineer <span class="text-neonPurple">struct</span> {<br>
+                            &nbsp;&nbsp;Name &nbsp;&nbsp;&nbsp;<span class="text-neonBlue">string</span><br>
+                            &nbsp;&nbsp;Focus &nbsp;&nbsp;&nbsp;[]<span class="text-neonBlue">string</span><br>
+                            &nbsp;&nbsp;Location <span class="text-neonBlue">string</span><br>
+                            }<br><br>
+                            <span class="text-neonPurple">func</span> <span class="text-neonBlue">main</span>() {<br>
+                            &nbsp;&nbsp;amir := Engineer{<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;Name: <span class="text-green-400">"Amir Khanalipour"</span>,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;Focus: []<span class="text-neonBlue">string</span>{<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">"Microservices"</span>,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">"High Scalability"</span>,<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<span class="text-green-400">"Cloud Native"</span><br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;},<br>
+                            &nbsp;&nbsp;&nbsp;&nbsp;Location: <span class="text-green-400">"Tehran"</span><br>
+                            &nbsp;&nbsp;}<br><br>
+                            &nbsp;&nbsp;<span class="text-slate-500">// Deploying to Production...</span><br>
+                            &nbsp;&nbsp;amir.<span class="text-neonBlue">BuildFuture</span>()<br>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="stack" class="py-24">
+            <h2 class="text-4xl font-hud font-bold text-white mb-12 flex items-center gap-4 reveal">
+                <span class="text-neonBlue">01.</span> TECHNICAL_ARSENAL
+                <div class="h-[1px] bg-gradient-to-r from-neonBlue/50 to-transparent flex-grow"></div>
+            </h2>
+
+            <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6 reveal">
+                <script>
+                    const skills = [
+                        { name: 'Java', icon: 'fa-java', color: 'text-red-400', level: '95%' },
+                        { name: 'Spring Boot', icon: 'fa-leaf', color: 'text-green-400', level: '90%' },
+                        { name: 'Go (Gin)', icon: 'fa-golang', color: 'text-cyan-400', level: '85%' },
+                        { name: 'Docker', icon: 'fa-docker', color: 'text-blue-500', level: '88%' },
+                        { name: 'Kubernetes', icon: 'fa-dharmachakra', color: 'text-blue-300', level: '80%' },
+                        { name: 'Kafka', icon: 'fa-bolt', color: 'text-orange-400', level: '85%' },
+                        { name: 'PostgreSQL', icon: 'fa-database', color: 'text-indigo-400', level: '90%' },
+                        { name: 'Redis', icon: 'fa-server', color: 'text-red-500', level: '85%' },
+                        { name: 'Microservices', icon: 'fa-network-wired', color: 'text-purple-400', level: '92%' },
+                        { name: 'CI/CD', icon: 'fa-infinity', color: 'text-yellow-400', level: '80%' }
+                    ];
+
+                    skills.forEach(skill => {
+                        document.write(`
+                            <div class="group glass-hud p-5 rounded hover:bg-white/5 transition-all relative overflow-hidden">
+                                <div class="absolute top-0 left-0 w-full h-1 bg-slate-800">
+                                    <div class="h-full bg-neonPurple skill-fill group-hover:w-[${skill.level}] w-0"></div>
+                                </div>
+                                <div class="flex flex-col items-center gap-3 pt-2">
+                                    <i class="fa-brands ${skill.icon} ${skill.name === 'Kubernetes' || skill.name === 'Kafka' || skill.name === 'PostgreSQL' || skill.name === 'Redis' || skill.name === 'Microservices' || skill.name === 'CI/CD' ? 'fa-solid' : ''} text-4xl ${skill.color} filter drop-shadow-[0_0_8px_rgba(255,255,255,0.3)]"></i>
+                                    <span class="font-mono text-sm font-bold text-slate-300 group-hover:text-white">${skill.name}</span>
+                                </div>
+                                <div class="absolute bottom-1 right-2 text-[10px] font-mono text-neonPurple opacity-0 group-hover:opacity-100 transition-opacity">LVL: ${skill.level}</div>
+                            </div>
+                        `);
+                    });
+                </script>
+            </div>
+        </section>
+
+        <section id="projects" class="py-24">
+            <h2 class="text-4xl font-hud font-bold text-white mb-12 flex items-center gap-4 reveal">
+                <span class="text-neonPurple">02.</span> MISSION_LOGS
+                <div class="h-[1px] bg-gradient-to-r from-neonPurple/50 to-transparent flex-grow"></div>
+            </h2>
+
+            <div class="grid md:grid-cols-2 gap-8">
+                <div class="group relative glass-hud rounded-xl border border-white/5 hover:border-neonBlue/50 transition-all duration-300 hover:-translate-y-2 reveal">
+                    <div class="absolute -right-12 -top-12 w-24 h-24 bg-neonBlue/20 rounded-full blur-2xl group-hover:bg-neonBlue/40 transition-all"></div>
+                    <div class="p-8 relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="text-4xl text-neonBlue"><i class="fa-solid fa-server"></i></div>
+                            <div class="px-2 py-1 rounded bg-neonBlue/10 border border-neonBlue/30 text-[10px] font-mono text-neonBlue">COMPLETED</div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2 font-hud tracking-wide">CandooSMS Migration</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6 font-mono">
+                            Refactoring legacy monoliths into scalable microservices. Achieved 50% throughput increase using async Kafka pipelines.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Java/Spring</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Kafka</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">K8s</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group relative glass-hud rounded-xl border border-white/5 hover:border-neonPurple/50 transition-all duration-300 hover:-translate-y-2 reveal">
+                    <div class="absolute -right-12 -top-12 w-24 h-24 bg-neonPurple/20 rounded-full blur-2xl group-hover:bg-neonPurple/40 transition-all"></div>
+                    <div class="p-8 relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="text-4xl text-neonPurple"><i class="fa-solid fa-ticket"></i></div>
+                            <div class="px-2 py-1 rounded bg-neonPurple/10 border border-neonPurple/30 text-[10px] font-mono text-neonPurple">DEPLOYED</div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2 font-hud tracking-wide">Ticketing Platform</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6 font-mono">
+                            High-concurrency support tool. Optimized PostgreSQL queries and implemented role-based auth with Go (Gin).
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Go/Gin</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">React</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Docker</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="group relative glass-hud rounded-xl border border-white/5 hover:border-neonGreen/50 transition-all duration-300 hover:-translate-y-2 reveal">
+                    <div class="absolute -right-12 -top-12 w-24 h-24 bg-neonGreen/20 rounded-full blur-2xl group-hover:bg-neonGreen/40 transition-all"></div>
+                    <div class="p-8 relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="text-4xl text-neonGreen"><i class="fa-solid fa-money-bill-transfer"></i></div>
+                            <div class="px-2 py-1 rounded bg-neonGreen/10 border border-neonGreen/30 text-[10px] font-mono text-neonGreen">SECURE</div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2 font-hud tracking-wide">Payment Gateway Svc</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6 font-mono">
+                            Fault-tolerant financial service. Implemented idempotency keys and distributed locking for data integrity.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Java</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Postgres</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Redis</span>
+                        </div>
+                    </div>
+                </div>
+
+                 <div class="group relative glass-hud rounded-xl border border-white/5 hover:border-pink-500/50 transition-all duration-300 hover:-translate-y-2 reveal">
+                    <div class="absolute -right-12 -top-12 w-24 h-24 bg-pink-500/20 rounded-full blur-2xl group-hover:bg-pink-500/40 transition-all"></div>
+                    <div class="p-8 relative z-10">
+                        <div class="flex justify-between items-start mb-6">
+                            <div class="text-4xl text-pink-500"><i class="fa-solid fa-bell"></i></div>
+                            <div class="px-2 py-1 rounded bg-pink-500/10 border border-pink-500/30 text-[10px] font-mono text-pink-500">LIVE</div>
+                        </div>
+                        <h3 class="text-2xl font-bold text-white mb-2 font-hud tracking-wide">Notification Engine</h3>
+                        <p class="text-slate-400 text-sm leading-relaxed mb-6 font-mono">
+                            Event-driven engine for Hamgam handling Push, SMS, and Email. Built for failure resistance and massive scale.
+                        </p>
+                        <div class="flex flex-wrap gap-2">
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Kafka</span>
+                            <span class="text-xs font-mono text-slate-300 px-2 py-1 bg-white/5 rounded">Spring Cloud</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="experience" class="py-24">
+            <h2 class="text-4xl font-hud font-bold text-white mb-12 flex items-center gap-4 reveal">
+                <span class="text-neonBlue">03.</span> CAREER_TIMELINE
+                <div class="h-[1px] bg-gradient-to-r from-neonBlue/50 to-transparent flex-grow"></div>
+            </h2>
+
+            <div class="relative pl-8 md:pl-0 space-y-12 reveal">
+                <div class="hidden md:block absolute left-1/2 top-0 bottom-0 w-[1px] bg-slate-800 transform -translate-x-1/2"></div>
+
+                <div class="md:flex justify-between items-center w-full">
+                    <div class="hidden md:block w-5/12 text-right pr-8">
+                        <div class="text-neonPurple font-bold font-hud text-2xl">Software Engineer</div>
+                        <div class="text-slate-400 font-mono text-xs">Dec 2022 - Present</div>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-4 h-4 rounded-full bg-neonPurple shadow-[0_0_10px_#d946ef] border-2 border-bg transform md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="md:w-5/12 pl-8">
+                        <h3 class="md:hidden text-neonPurple font-bold font-hud text-xl">Software Engineer</h3>
+                        <div class="text-white font-bold mb-2">CandooSMS</div>
+                        <p class="text-slate-400 text-sm font-mono leading-relaxed">
+                            Leading the migration from legacy monolithic systems to a modern Microservices architecture. Implemented CI/CD pipelines.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="md:flex justify-between items-center w-full flex-row-reverse">
+                    <div class="hidden md:block w-5/12 text-left pl-8">
+                        <div class="text-neonBlue font-bold font-hud text-2xl">Software Engineer</div>
+                        <div class="text-slate-400 font-mono text-xs">Jul 2022 – Nov 2022</div>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-4 h-4 rounded-full bg-neonBlue shadow-[0_0_10px_#06b6d4] border-2 border-bg transform md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="md:w-5/12 md:text-right pr-8 pl-8 md:pl-0">
+                        <h3 class="md:hidden text-neonBlue font-bold font-hud text-xl">Software Engineer</h3>
+                        <div class="text-white font-bold mb-2">Hamgam Group</div>
+                        <p class="text-slate-400 text-sm font-mono leading-relaxed">
+                             Designed and implemented a Notification System using Kafka. Optimized database interactions for high-volume transactions.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="md:flex justify-between items-center w-full">
+                    <div class="hidden md:block w-5/12 text-right pr-8">
+                        <div class="text-slate-200 font-bold font-hud text-2xl">Backend Dev</div>
+                        <div class="text-slate-400 font-mono text-xs">Dec 2021 – Jul 2022</div>
+                    </div>
+                    <div class="absolute left-0 md:left-1/2 w-4 h-4 rounded-full bg-slate-500 border-2 border-bg transform md:-translate-x-1/2 mt-1.5 md:mt-0"></div>
+                    <div class="md:w-5/12 pl-8">
+                        <h3 class="md:hidden text-white font-bold font-hud text-xl">Backend Dev</h3>
+                        <div class="text-white font-bold mb-2">Hovita</div>
+                        <p class="text-slate-400 text-sm font-mono leading-relaxed">
+                            Developed secure backend modules involving cryptography. Collaborated with frontend teams to define API contracts.
+                        </p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="contact" class="py-32 text-center reveal relative">
+            <div class="absolute inset-0 bg-gradient-to-t from-neonPurple/5 to-transparent pointer-events-none"></div>
+            
+            <div class="inline-block p-1 border border-neonPurple/30 rounded mb-6">
+                <div class="px-4 py-1 bg-neonPurple/10 text-neonPurple font-mono text-xs">TRANSMISSION_OPEN</div>
+            </div>
+            
+            <h2 class="text-5xl md:text-7xl font-bold text-white mb-8 font-hud">ESTABLISH <br> CONNECTION</h2>
+            
+            <p class="text-slate-400 max-w-xl mx-auto mb-10 font-mono">
+                My neural link is always open for new opportunities. Whether you have a question or just want to say hi, I'll try my best to get back to you!
+            </p>
+            
+            <a href="mailto:amirm.khanalipour@gmail.com" class="relative inline-flex group">
+                <div class="absolute transition-all duration-1000 opacity-70 -inset-px bg-gradient-to-r from-[#44BCFF] via-[#FF44EC] to-[#FF675E] rounded-xl blur-lg group-hover:opacity-100 group-hover:-inset-1 group-hover:duration-200 animate-tilt"></div>
+                <button class="relative inline-flex items-center justify-center px-8 py-4 text-lg font-bold text-white transition-all duration-200 bg-gray-900 font-hud rounded-xl focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+                    SAY HELLO
+                </button>
+            </a>
+
+            <div class="mt-24 pt-8 border-t border-slate-800 text-slate-600 font-mono text-xs flex flex-col md:flex-row justify-between items-center">
+                <p>DESIGNED & BUILT BY AMIR KHANALIPOUR</p>
+                <div class="flex gap-6 mt-4 md:mt-0">
+                    <span class="text-neonBlue">v2.0.24</span>
+                    <span class="text-neonGreen">System Normal</span>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="download-overlay" class="fixed inset-0 bg-black/90 z-[100] hidden flex-col items-center justify-center">
+        <div class="font-mono text-neonGreen text-xl mb-4" id="download-text">INITIATING SECURE HANDSHAKE...</div>
+        <div class="w-64 h-2 bg-slate-800 rounded overflow-hidden">
+            <div id="download-bar" class="h-full bg-neonGreen w-0"></div>
+        </div>
+    </div>
+
+    <script>
+        const RESUME_URL = "Amirmohammad_Khanalipour_Resume.pdf"; 
+
+        const cursorDot = document.getElementById("cursor-dot");
+        const cursorOutline = document.getElementById("cursor-outline");
+
+        window.addEventListener("mousemove", function(e) {
+            const posX = e.clientX;
+            const posY = e.clientY;
+
+            cursorDot.style.left = `${posX}px`;
+            cursorDot.style.top = `${posY}px`;
+
+            cursorOutline.animate({
+                left: `${posX}px`,
+                top: `${posY}px`
+            }, { duration: 500, fill: "forwards" });
+        });
+        
+        document.querySelectorAll('a, button').forEach(el => {
+            el.addEventListener('mouseenter', () => {
+                cursorOutline.style.transform = "translate(-50%, -50%) scale(1.5)";
+                cursorOutline.style.borderColor = "#22c55e"; 
+                cursorDot.style.background = "#22c55e";
+            });
+            el.addEventListener('mouseleave', () => {
+                cursorOutline.style.transform = "translate(-50%, -50%) scale(1)";
+                cursorOutline.style.borderColor = "rgba(217, 70, 239, 0.5)"; 
+                cursorDot.style.background = "#06b6d4";
+            });
+        });
+
+        const textToType = "Building scalable, fault-tolerant architectures.";
+        const typeContainer = document.getElementById('typewriter');
+        let typeIndex = 0;
+
+        function typeWriter() {
+            if (typeIndex < textToType.length) {
+                typeContainer.innerHTML += textToType.charAt(typeIndex);
+                typeIndex++;
+                setTimeout(typeWriter, 50);
+            }
+        }
+        setTimeout(typeWriter, 1000);
+
+        function downloadResume() {
+            const overlay = document.getElementById('download-overlay');
+            const bar = document.getElementById('download-bar');
+            const text = document.getElementById('download-text');
+            
+            overlay.classList.remove('hidden');
+            overlay.classList.add('flex');
+            
+            let progress = 0;
+            const interval = setInterval(() => {
+                progress += Math.random() * 10;
+                if(progress > 100) progress = 100;
+                
+                bar.style.width = `${progress}%`;
+                
+                if(progress < 30) text.innerText = "ESTABLISHING SECURE CONNECTION...";
+                else if(progress < 60) text.innerText = "DECRYPTING DATA PACKETS...";
+                else if(progress < 90) text.innerText = "ASSEMBLING PDF...";
+                else text.innerText = "DOWNLOAD COMPLETE.";
+
+                if(progress === 100) {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        overlay.classList.add('hidden');
+                        overlay.classList.remove('flex');
+                        const link = document.createElement('a');
+                        link.href = RESUME_URL;
+                        link.download = 'Amirmohammad_Khanalipour_Resume.pdf'; 
+                        document.body.appendChild(link);
+                        link.click();
+                        document.body.removeChild(link);
+                    }, 500);
+                }
+            }, 100);
+        }
+
+        const canvas = document.getElementById('neural-canvas');
+        const ctx = canvas.getContext('2d');
+        let width, height;
+        let particles = [];
+
+        function resizeCanvas() {
+            width = window.innerWidth;
+            height = window.innerHeight;
+            canvas.width = width;
+            canvas.height = height;
+        }
+
+        class Particle {
+            constructor() {
+                this.x = Math.random() * width;
+                this.y = Math.random() * height;
+                this.vx = (Math.random() - 0.5) * 0.5;
+                this.vy = (Math.random() - 0.5) * 0.5;
+                this.size = Math.random() * 2;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                if(this.x < 0 || this.x > width) this.vx *= -1;
+                if(this.y < 0 || this.y > height) this.vy *= -1;
+            }
+            draw() {
+                ctx.fillStyle = 'rgba(6, 182, 212, 0.5)';
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        }
+
+        function initParticles() {
+            particles = [];
+            const particleCount = Math.floor(width / 15);
+            for(let i=0; i<particleCount; i++) particles.push(new Particle());
+        }
+
+        function animateCanvas() {
+            ctx.clearRect(0, 0, width, height);
+            
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                
+                for(let j=index; j<particles.length; j++) {
+                    const dx = particles[j].x - p.x;
+                    const dy = particles[j].y - p.y;
+                    const dist = Math.sqrt(dx*dx + dy*dy);
+                    
+                    if(dist < 100) {
+                        ctx.strokeStyle = `rgba(217, 70, 239, ${1 - dist/100})`;
+                        ctx.lineWidth = 0.5;
+                        ctx.beginPath();
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(particles[j].x, particles[j].y);
+                        ctx.stroke();
+                    }
+                }
+            });
+            requestAnimationFrame(animateCanvas);
+        }
+
+        window.addEventListener('resize', () => { resizeCanvas(); initParticles(); });
+        resizeCanvas();
+        initParticles();
+        animateCanvas();
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if(entry.isIntersecting) {
+                    entry.target.classList.add('active');
+                    if(entry.target.querySelector('.skill-fill')) {
+                        entry.target.querySelectorAll('.skill-fill').forEach(bar => {
+                            const targetWidth = bar.classList.contains('w-0') ? bar.parentElement.innerHTML.match(/w-\[(.*?)\]/)[1] : '0%';
+                        });
+                    }
+                }
+            });
+        }, { threshold: 0.1 });
+
+        document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+        const menuBtn = document.getElementById('mobile-menu-btn');
+        const closeBtn = document.getElementById('close-menu');
+        const mobileMenu = document.getElementById('mobile-menu');
+
+        const toggleMenu = () => {
+            const isOpen = !mobileMenu.classList.contains('translate-y-[-100%]');
+            if(isOpen) {
+                mobileMenu.classList.add('translate-y-[-100%]');
+            } else {
+                mobileMenu.classList.remove('translate-y-[-100%]');
+            }
+        };
+
+        menuBtn.addEventListener('click', toggleMenu);
+        closeBtn.addEventListener('click', toggleMenu);
+        mobileMenu.querySelectorAll('a').forEach(l => l.addEventListener('click', toggleMenu));
+
+    </script>
+</body>
+</html>
